@@ -1,1 +1,95 @@
+Getting Data into Snowflake There are many ways to get data into Snowflake from many locations including the COPY command, Snowpipe auto-ingestion, external connectors, or third-party ETL/ELT solutions.
+
+we use the COPY command and AWS S3 storage to load data manually. In a real-world scenario, you would more likely use an automated process or ETL solution.
+
+$$$$$The data we will be using is bike share data provided by Citi Bike NYC. The data has been exported and pre-staged for you in an Amazon AWS S3 bucket in the US-EAST region. The data consists of information about trip times, locations, user type, gender, age, etc. On AWS S3, the data represents 61.5M rows, 377 objects, and 1.9GB compressed.$$$$$
+
+
+Data Definition Language (DDL) operations are free! All the DDL operations we have done so far do not require compute resources, so we can create all our objects for free.
+
+create or replace table trips
+(tripduration integer,
+starttime timestamp,
+stoptime timestamp,
+start_station_id integer,
+start_station_name string,
+start_station_latitude float,
+start_station_longitude float,
+end_station_id integer,
+end_station_name string,
+end_station_latitude float,
+end_station_longitude float,
+bikeid integer,
+membership_type string,
+usertype string,
+birth_year integer,
+gender integer);
+Many Options to Run Commands. SQL commands can be executed through the UI, via the Worksheets tab, using our SnowSQL command line tool, with a SQL editor of your choice via ODBC/JDBC, or through our other connectors (Python, Spark, etc.). As mentioned earlier, to save time, we are performing most of the operations in this lab via pre-written SQL executed in the worksheet as opposed to using the UI.
+
+Run the query by placing your cursor anywhere in the SQL text and clicking the blue Play/Run button in the top right of the worksheet. Or use the keyboard shortcut [Ctrl]/[Cmd]+[Enter].
+
+Verify that your TRIPS table has been created. At the bottom of the worksheet you should see a Results section displaying a "Table TRIPS successfully created" message.
+
+TRIPS confirmation message
+
+Navigate to the Databases tab by clicking the HOME icon in the upper left corner of the worksheet. Then click Data > Databases. In the list of databases, click CITIBIKE > PUBLIC > TABLES to see your newly created TRIPS table. If you don't see any databases on the left, expand your browser because they may be hidden.
+
+TRIPS table
+
+Click TRIPS and the Columns tab to see the table structure you just created.
+
+TRIPS table structure
+
+Create an External Stage
+We are working with structured, comma-delimited data that has already been staged in a public, external S3 bucket. Before we can use this data, we first need to create a Stage that specifies the location of our external bucket.
+
+For this lab we are using an AWS-East bucket. To prevent data egress/transfer costs in the future, you should select a staging location from the same cloud provider and region as your Snowflake account.
+
+From the Databases tab, click the CITIBIKE database and PUBLIC schema. Click the Create button, then Stage > Amazon S3.
+
+stages create
+
+In the "Create Securable Object" dialog that opens, replace the following values in the SQL statement:
+
+: citibike_trips
+
+: s3://snowflake-workshop-lab/citibike-trips-csv/
+
+Note: Make sure to include the final forward slash (/) at the end of the URL or you will encounter errors later when loading data from the bucket. Also ensure you have removed ‘credentials = (...)' statement which is not required. You can also comment it out like the picture below by using ‘–'. The create stage command should resemble the below picture or not include the 3rd line.
+
+The S3 bucket for this lab is public so you can leave the credentials options in the statement empty. In a real-world scenario, the bucket used for an external stage would likely require key information.
+
+create stage settings
+
+Now let's take a look at the contents of the citibike_trips stage. Navigate back to the Worksheets tab and open the ‘CITIBIKE_ZERO_TO_SNOWFLAKE' worksheet we made, add the following SQL statement below the previous code as shown in the below picture and then execute:
+
+list @citibike_trips;
+In the results in the bottom pane, you should see the list of files in the stage:
+
+worksheet result
+
+Create a File Format
+Before we can load the data into Snowflake, we have to create a file format that matches the data structure.
+
+In the worksheet, again add the below command below the rest and execute to create the file format:
+
+--create file format
+
+create or replace file format csv type='csv'
+  compression = 'auto' field_delimiter = ',' record_delimiter = '\n'
+  skip_header = 0 field_optionally_enclosed_by = '\042' trim_space = false
+  error_on_column_count_mismatch = false escape = 'none' escape_unenclosed_field = '\134'
+  date_format = 'auto' timestamp_format = 'auto' null_if = ('') comment = 'file format for ingesting data for zero to snowflake';
+create file format
+
+Verify that the file format has been created with the correct settings by executing the following command:
+
+--verify file format is created
+
+show file formats in database citibike;
+The file format created should be listed in the result:
+
+create file format settings
+
+Back
 
