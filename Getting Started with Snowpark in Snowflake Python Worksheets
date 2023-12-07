@@ -92,3 +92,6 @@ def main(session: snowpark.Session):
 
     # If you’d like a more guided experience, supplemental video and screenshots go to:: https://quickstarts.snowflake.com/guide/getting_started_with_snowpark_in_snowflake_python_worksheets/index.html
 #####
+
+
+later deply as a stored procedure
